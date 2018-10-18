@@ -1,4 +1,4 @@
-# Data functions written by course instructors, Machine Learning, University of Utah, Spring 2018, Professor Vivek Srikumar
+# Data functions written by course instructors
 
 import copy
 import numpy as np
