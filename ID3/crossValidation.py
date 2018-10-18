@@ -5,7 +5,7 @@ import data
 import numpy as np
 
 
-# Data and folds provided by class instructor, obtained from the liblinear repository, heavily modified for class purposes (the original data will not work with this code)
+# Data and folds provided by class instructor, obtained from the liblinear repository, heavily modified for class purposes (the original data may not work with this code)
 # https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html#mushrooms
 #
 # trainingData = data.Data(fpath='experiment-data/data/train.csv')
