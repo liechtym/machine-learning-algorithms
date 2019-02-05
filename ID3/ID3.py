@@ -1,44 +1,51 @@
 import sys
 import numpy as np
+import utility_functions as uf
+import pdb
+sys.path.append('data')
 import tree
-import functions
 
-def ID3(S, Attributes, Label = "root", index = 0, hyperparameter = None):
-    # If all examples have the same label or if hyperparameter has been reached: Return a single node tree with the common label
-    if (np.unique(S.raw_data[:, 0]).size == 1) or (hyperparameter and hyperparameter == index):
-        commonLabel = functions.get_common_value(S.raw_data[:, 0])
-        bottomLeafNode = tree.Tree(label = commonLabel, treeLevel = index)
-        if (hyperparameter and hyperparameter == index):
-            A = functions.get_best_attribute_to_split_on(S, Attributes, 'e')
-            bottomLeafNode.entropy = A["entropy"] + A["informationGain"]
-        else:
-            bottomLeafNode.entropy = 0
-        bottomLeafNode.splitOn = None
-        return bottomLeafNode
-    else:
-        # Create Root node
-        rootNode = tree.Tree(label = Label, treeLevel = index)
-        # Determine attribute to split on
-        A = functions.get_best_attribute_to_split_on(S, Attributes, 'e')
-        # Assign entropy for current node
-        rootNode.entropy = A["entropy"] + A["informationGain"]
-        # If the hyperparameter is one above the index, return the rootNode, stop growing the tree
-        rootNode.splitOn = A["name"]
-        # for each possible value v of that A can take:
-        for v in S.get_attribute_possible_vals(A["name"]):
-            # Add new branch corresponding to A=v
-            rootNode.addBranch(v)
-            # Let Sv be the subset of examples in S with A=V
-            Sv = S.get_row_subset(A["name"], v)
-            # If Sv is empty: add leaf node with common value of Label in S
-            if Sv.raw_data.size == 0:
-                bottomLeafNode = tree.Tree(label= S.raw_data[0, 0], treeLevel = index)
-                bottomLeafNode.entropy = 0
-                bottomLeafNode.splitOn = None
-                rootNode.addChildNode(v, bottomLeafNode)
-            # else below this branch, add the subtree ID3(Sv, Attributes - {A}, Label)
+class ID3_boolean:
+    def __init__(self):
+        self.possible_vals = [-1, 1]
+        self.tree = None
+
+    def train(self, XBatch, num, label = "root", index = 0, depth = 50, queue=None):
+        self.tree = self.ID3(XBatch, num, label = label, index = index, depth = depth)
+        if queue:
+            queue.put(self)
+        
+
+    def predict(self, instances):
+        return self.predict_from_tree(self.tree, instances)
+
+    def predict_from_tree(self, tree, instances):
+        if len(tree.childNodes) > 0:
+            if tree.splitOn in instances:
+                return self.predict_from_tree(tree.childNodes['1'], instances)
             else:
-                attrs = dict(Attributes)
-                del attrs[A["name"]]
-                rootNode.addChildNode(v, ID3(Sv, attrs, Label = A["name"], index = index + 1, hyperparameter = hyperparameter))
+                return self.predict_from_tree(tree.childNodes['-1'], instances)
+        else:
+            return tree.label
+
+    def ID3(self, XBatch, num, label = "root", index = 0, depth = 50):
+        if uf.has_same_label(XBatch):
+            label = XBatch[0]['label']
+            return tree.Tree(label = label, treeLevel = index)
+        elif depth == index:
+            label = uf.get_most_common_label(XBatch)
+            return tree.Tree(label = label, treeLevel = index)
+        else:
+            # Create Root node
+            rootNode = tree.Tree(label = label, treeLevel = index)
+            bestAttr = uf.get_best_attribute(XBatch, num)
+            rootNode.splitOn = bestAttr
+            for val in self.possible_vals:
+                rootNode.addBranch(str(val))
+                subset = uf.get_data_subset(val, bestAttr, XBatch)
+                if len(subset) == 0:
+                    rootNode.addChildNode(str(val), tree.Tree(label = val, treeLevel = index + 1))
+                else:
+                    rootNode.addChildNode(str(val), self.ID3(subset, num, label = val, index = index + 1, depth = depth))
+
         return rootNode

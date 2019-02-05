@@ -1,5 +1,3 @@
-# Tree class written by me, Matthew Liechty
-# Inspired by https://stackoverflow.com/questions/2358045/how-can-i-implement-a-tree-in-python-are-there-any-built-in-data-structures-in, answer 2
 class Tree:
     def __init__(self, label="root", treeLevel = 0):
         self.childNodes = {}
